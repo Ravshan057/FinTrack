@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://fintrack-backend-beta.vercel.app/api/:path*"
+    },
+    {
+      "source": "/((?!_next/|_static/|assets/|favicon.ico).*)",
+      "destination": "/index.html"
     }
   ]
 }
