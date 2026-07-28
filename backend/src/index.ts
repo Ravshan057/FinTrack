@@ -117,7 +117,16 @@ app.use(async (_req, _res, next) => {
 });
 
 app.use(helmet());
-app.use(cors({ origin: config.CORS_ORIGIN }));
+const allowedOrigins = config.CORS_ORIGIN.split(',').map((s) => s.trim());
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+}));
 app.use(express.json());
 
 const authLimiter = rateLimit({
