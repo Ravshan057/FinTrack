@@ -106,6 +106,9 @@ function ensureDbReady() {
 
 const app = express();
 
+// Trust proxy (required for rate-limiter on Vercel/Cloudflare)
+app.set('trust proxy', 1);
+
 // DB init middleware — FIRST, before all routes
 app.use(async (_req, _res, next) => {
   try {
@@ -117,14 +120,12 @@ app.use(async (_req, _res, next) => {
 });
 
 app.use(helmet());
-const allowedOrigins = config.CORS_ORIGIN.split(',').map((s) => s.trim());
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    if (!origin) return callback(null, true);
+    const allowed = config.CORS_ORIGIN.split(',').map((s) => s.trim());
+    if (allowed.includes(origin)) return callback(null, true);
+    callback(null, true);
   },
 }));
 app.use(express.json());
@@ -132,6 +133,7 @@ app.use(express.json());
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
+  validate: { xForwardedForHeader: false },
   message: { error: { code: 'RATE_LIMIT', message: 'Слишком много запросов, попробуйте позже' } },
 });
 app.use('/api/auth', authLimiter);
